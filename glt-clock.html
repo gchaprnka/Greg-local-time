@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GLT — where sunset is always 8:00 PM</title>
+<style>
+  :root{
+    --ink:#12182B;
+    --dusk:#4A3B6B;
+    --horizon:#E8734A;
+    --glow:#F4B860;
+    --paper:#FBF4E8;
+    --slate:#8B93AA;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    font-family: Georgia, "Iowan Old Style", ui-serif, serif;
+    color:var(--paper);
+    overflow:hidden;
+  }
+  body{
+    position:relative;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    transition: background 2s linear;
+  }
+
+  #sky{ position:absolute; inset:0; z-index:0; }
+  #horizonLine{
+    position:absolute; left:0; right:0; height:1px;
+    background: rgba(251,244,232,0.35);
+    top:62%;
+  }
+  #sunDot{
+    position:absolute; width:14px; height:14px; border-radius:50%;
+    background: var(--glow);
+    box-shadow: 0 0 24px 6px rgba(244,184,96,0.55);
+    top:62%; transform: translate(-50%,-50%);
+    transition: left 1s linear, top 1s linear, opacity 1s linear;
+  }
+
+  #wrap{
+    position:relative; z-index:1;
+    display:flex; flex-direction:column; align-items:center; gap:0.6rem;
+    padding: 1.5rem;
+    text-align:center;
+  }
+  .eyebrow{
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size:0.72rem; letter-spacing:0.16em; text-transform:uppercase;
+    color: var(--slate);
+  }
+  #gltClock{
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(3.2rem, 13vw, 8rem);
+    font-weight: 500;
+    line-height:1;
+    letter-spacing: -0.02em;
+    margin: 0.2rem 0;
+    display:flex; align-items:baseline; gap:0.5rem;
+  }
+  #gltClock .meridiem{ font-size:0.32em; color:var(--slate); font-weight:600; }
+  #gltLabel{
+    font-size:0.95rem; color: var(--slate); font-family: ui-monospace, monospace;
+  }
+  #locLine{
+    font-size:0.72rem; color: var(--slate); font-family: ui-monospace, monospace;
+    letter-spacing:0.03em;
+  }
+  #locLine .tag{
+    color: var(--glow); font-weight:600;
+  }
+  #row{
+    display:flex; gap:2.2rem; margin-top:1.6rem; flex-wrap:wrap; justify-content:center;
+  }
+  .sub{ display:flex; flex-direction:column; align-items:center; gap:0.15rem; }
+  .sub .time{ font-family: ui-monospace, monospace; font-size:1.3rem; font-variant-numeric: tabular-nums; }
+  .sub .time .meridiem{ font-size:0.7rem; color:var(--slate); }
+  .sub .label{ font-size:0.68rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--slate); }
+
+  #gearBtn{
+    position:absolute; top:1rem; right:1rem; z-index:3;
+    width:34px; height:34px; border-radius:50%;
+    background: rgba(18,24,43,0.45); border:1px solid rgba(251,244,232,0.18);
+    color: var(--paper); font-size:1rem; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    backdrop-filter: blur(6px);
+  }
+  #gearBtn:hover{ background: rgba(18,24,43,0.7); }
+
+  #panel{
+    position:absolute; top:1rem; right:1rem; z-index:2;
+    background: rgba(18,24,43,0.72);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(251,244,232,0.15);
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+    font-family: ui-monospace, monospace;
+    font-size:0.75rem;
+    color: var(--paper);
+    width: 220px;
+    transform: translateY(-8px) scale(0.98);
+    opacity:0;
+    pointer-events:none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  #panel.open{ opacity:1; pointer-events:auto; transform: translateY(0) scale(1); }
+  #panel h3{ margin:0 0 0.6rem; font-size:0.7rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--slate); font-weight:600;}
+  #panel label{ display:block; margin-top:0.55rem; color:var(--slate); }
+  #panel input, #panel select{
+    width:100%; margin-top:0.2rem; padding:0.35rem 0.4rem;
+    background: rgba(251,244,232,0.08); border:1px solid rgba(251,244,232,0.2);
+    border-radius:5px; color:var(--paper); font-family:inherit; font-size:0.75rem;
+  }
+  #panel button{
+    margin-top:0.7rem; width:100%; padding:0.4rem; border-radius:5px; border:none;
+    background: var(--horizon); color:var(--ink); font-family:inherit; font-weight:600; cursor:pointer;
+  }
+  #panel button:hover{ background: var(--glow); }
+  #status{ margin-top:0.5rem; font-size:0.68rem; color:var(--slate); line-height:1.4; }
+
+  footer{
+    position:absolute; bottom:0.9rem; left:0; right:0; text-align:center; z-index:1;
+    font-family: ui-monospace, monospace; font-size:0.65rem; color: var(--slate); letter-spacing:0.04em;
+  }
+</style>
+</head>
+<body>
+  <div id="sky">
+    <div id="horizonLine"></div>
+    <div id="sunDot"></div>
+  </div>
+
+  <button id="gearBtn" title="Settings">⚙</button>
+  <div id="panel">
+    <h3>Location &amp; settings</h3>
+    <label>Latitude</label>
+    <input id="lat" type="number" step="0.01" value="39.29">
+    <label>Longitude (west negative)</label>
+    <input id="lon" type="number" step="0.01" value="-76.61">
+    <label>Sunset target</label>
+    <input id="target" type="time" value="20:00">
+    <label>Clock format</label>
+    <select id="clockFormat">
+      <option value="12" selected>12-hour</option>
+      <option value="24">24-hour</option>
+    </select>
+    <button id="useLocation">Use my GPS location</button>
+    <div id="status">Trying GPS automatically. Denied or unavailable falls back to the values above.</div>
+  </div>
+
+  <div id="wrap">
+    <div class="eyebrow" id="eyebrow">GLT — where sunset is always 8:00 PM</div>
+    <div id="gltClock"><span id="gltTime">--:--:--</span><span class="meridiem" id="gltMeridiem"></span></div>
+    <div id="gltLabel">Greg Local Time · right now</div>
+    <div id="locLine">📍 <span id="locCoords">--</span> <span class="tag" id="locTag"></span></div>
+    <div id="row">
+      <div class="sub"><div class="time" id="utcClock">--:--:--</div><div class="label">GMT / UTC</div></div>
+      <div class="sub"><div class="time" id="tzClock">--:--:--</div><div class="label" id="tzLabelText">Local</div></div>
+      <div class="sub"><div class="time" id="offsetDisplay">--</div><div class="label">GLT offset</div></div>
+    </div>
+  </div>
+
+  <footer>sunset, pinned to the clock — an experiment in hyper-local time</footer>
+
+<script>
+/* ---------- Ported solar / GLT core ---------- */
+const RAD = Math.PI/180, DEG = 180/Math.PI;
+
+function dayOfYearUTC(date){
+  const start = Date.UTC(date.getUTCFullYear(),0,1);
+  const diff = Date.UTC(date.getUTCFullYear(),date.getUTCMonth(),date.getUTCDate()) - start;
+  return Math.floor(diff/86400000)+1;
+}
+function sunPosition(date){
+  const doy = dayOfYearUTC(date);
+  const hour = date.getUTCHours()+date.getUTCMinutes()/60;
+  const gamma = (2*Math.PI/365)*(doy-1+(hour-12)/24);
+  const eqTime = 229.18*(0.000075+0.001868*Math.cos(gamma)-0.032077*Math.sin(gamma)-0.014615*Math.cos(2*gamma)-0.040849*Math.sin(2*gamma));
+  const decl = 0.006918-0.399912*Math.cos(gamma)+0.070257*Math.sin(gamma)-0.006758*Math.cos(2*gamma)+0.000907*Math.sin(2*gamma)-0.002697*Math.cos(3*gamma)+0.00148*Math.sin(3*gamma);
+  return {eqTime, decl};
+}
+function sunsetUTCMinutes(date, lat, lon){
+  const noonGuess = new Date(Date.UTC(date.getUTCFullYear(),date.getUTCMonth(),date.getUTCDate(),12,0,0));
+  const {eqTime, decl} = sunPosition(noonGuess);
+  const zenith = 90.833*RAD, latRad = lat*RAD;
+  const cosHA = (Math.cos(zenith)/(Math.cos(latRad)*Math.cos(decl))) - Math.tan(latRad)*Math.tan(decl);
+  if (cosHA > 1 || cosHA < -1) return null;
+  const ha0Deg = Math.acos(cosHA)*DEG;
+  const solarNoonUTC = 720 - 4*lon - eqTime;
+  return solarNoonUTC + 4*ha0Deg;
+}
+function smoothedSunsetUTCMinutes(date, lat, lon, halfWindow=4){
+  const pts=[];
+  for(let d=-halfWindow; d<=halfWindow; d++){
+    const day = new Date(date.getTime()+d*86400000);
+    const m = sunsetUTCMinutes(day, lat, lon);
+    if(m!==null) pts.push([d,m]);
+  }
+  if(pts.length<2) return sunsetUTCMinutes(date,lat,lon);
+  const n=pts.length, sumX=pts.reduce((s,[x])=>s+x,0), sumY=pts.reduce((s,[,y])=>s+y,0);
+  const sumXY=pts.reduce((s,[x,y])=>s+x*y,0), sumXX=pts.reduce((s,[x])=>s+x*x,0);
+  const b=(n*sumXY-sumX*sumY)/(n*sumXX-sumX*sumX);
+  const a=(sumY-b*sumX)/n;
+  return a;
+}
+function getGLTOffsetMinutes(date, lat, lon, targetSunsetMinutes, previousOffsetMinutes){
+  const sunset = smoothedSunsetUTCMinutes(date, lat, lon);
+  const anchor = previousOffsetMinutes ?? Math.round(lon/15)*60;
+  if(sunset===null) return anchor;
+  const raw = targetSunsetMinutes - sunset;
+  const k = Math.round((anchor-raw)/1440);
+  return raw + k*1440;
+}
+
+/* ---------- App state ---------- */
+let state = {
+  lat: 39.29, lon: -76.61,
+  targetMinutes: 20*60,
+  offsetMinutes: null,
+  offsetCachedForDay: null,
+  locSource: 'default', // 'default' | 'gps' | 'manual'
+  use12h: true,
+};
+
+const localZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+function recomputeOffsetIfNeeded(now){
+  const dayKey = now.toISOString().slice(0,10);
+  if(state.offsetCachedForDay !== dayKey){
+    state.offsetMinutes = getGLTOffsetMinutes(now, state.lat, state.lon, state.targetMinutes, state.offsetMinutes);
+    state.offsetCachedForDay = dayKey;
+  }
+}
+
+// Formats a UTC-based Date's wall-clock components as HH:MM:SS (24h) or
+// h:MM:SS + AM/PM (12h). Returns {time, meridiem}.
+function fmtParts(d){
+  let h = d.getUTCHours();
+  const mm = String(d.getUTCMinutes()).padStart(2,'0');
+  const ss = String(d.getUTCSeconds()).padStart(2,'0');
+  if (!state.use12h){
+    return { time: `${String(h).padStart(2,'0')}:${mm}:${ss}`, meridiem: '' };
+  }
+  const mer = h >= 12 ? 'PM' : 'AM';
+  h = h % 12; if (h === 0) h = 12;
+  return { time: `${h}:${mm}:${ss}`, meridiem: mer };
+}
+
+function fmtTargetLabel(targetMinutes){
+  let h = Math.floor(targetMinutes/60), m = targetMinutes%60;
+  if (!state.use12h) return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  const mer = h >= 12 ? 'PM' : 'AM';
+  let h12 = h % 12; if (h12===0) h12=12;
+  return `${h12}:${String(m).padStart(2,'0')} ${mer}`;
+}
+
+function updateSky(gltMinutesNow, targetMinutes){
+  let delta = gltMinutesNow - targetMinutes;
+  if (delta > 720) delta -= 1440;
+  if (delta < -720) delta += 1440;
+  const absNorm = Math.min(Math.abs(delta)/480, 1);
+
+  const ink=[18,24,43], dusk=[74,59,107], horizon=[232,115,74];
+  function lerp(a,b,t){return a+(b-a)*t;}
+  function mix(c1,c2,t){return [0,1,2].map(i=>Math.round(lerp(c1[i],c2[i],t)));}
+
+  let top, bottom, sunOpacity;
+  if (delta >= 0) {
+    const t = absNorm;
+    top = mix(dusk, ink, t);
+    bottom = mix(horizon, dusk, Math.min(t*1.6,1));
+    sunOpacity = Math.max(0, 1 - t*1.3);
+  } else {
+    const t = absNorm;
+    top = mix(dusk, [70,110,150], t);
+    bottom = mix(horizon, [130,170,190], t);
+    sunOpacity = Math.max(0.15, 1 - t);
+  }
+  document.body.style.background = `linear-gradient(to bottom, rgb(${top.join(',')}) 0%, rgb(${bottom.join(',')}) 100%)`;
+
+  const frac = ((gltMinutesNow % 1440)+1440)%1440 / 1440;
+  const xPct = 8 + frac*84;
+  const sun = document.getElementById('sunDot');
+  sun.style.left = xPct+'%';
+  sun.style.opacity = sunOpacity.toFixed(2);
+}
+
+function updateLocLine(){
+  const latAbs = Math.abs(state.lat).toFixed(2);
+  const lonAbs = Math.abs(state.lon).toFixed(2);
+  const ns = state.lat >= 0 ? 'N' : 'S';
+  const ew = state.lon >= 0 ? 'E' : 'W';
+  document.getElementById('locCoords').textContent = `${latAbs}°${ns}, ${lonAbs}°${ew}`;
+  const tagMap = { default: 'default — Baltimore', gps: 'GPS', manual: 'manual' };
+  document.getElementById('locTag').textContent = `(${tagMap[state.locSource]})`;
+}
+
+function tick(){
+  const now = new Date();
+  recomputeOffsetIfNeeded(now);
+
+  const gltDate = new Date(now.getTime() + state.offsetMinutes*60000);
+  const gltP = fmtParts(gltDate);
+  document.getElementById('gltTime').textContent = gltP.time;
+  document.getElementById('gltMeridiem').textContent = gltP.meridiem;
+
+  const utcP = fmtParts(now);
+  document.getElementById('utcClock').innerHTML = utcP.time + (utcP.meridiem ? ` <span class="meridiem">${utcP.meridiem}</span>` : '');
+
+  try{
+    const nowInZone = new Date(new Intl.DateTimeFormat('en-US',{timeZone:localZone,hour12:false,
+      year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'})
+      .format(now).replace(/(\d+)\/(\d+)\/(\d+), (\d+):(\d+):(\d+)/, '$3-$1-$2T$4:$5:$6Z'));
+    const tzP = fmtParts(nowInZone);
+    document.getElementById('tzClock').innerHTML = tzP.time + (tzP.meridiem ? ` <span class="meridiem">${tzP.meridiem}</span>` : '');
+  }catch(e){
+    document.getElementById('tzClock').textContent = '--:--:--';
+  }
+  document.getElementById('tzLabelText').textContent = localZone.split('/').pop().replace('_',' ');
+
+  const offH = state.offsetMinutes/60;
+  document.getElementById('offsetDisplay').textContent = (offH>=0?'+':'')+offH.toFixed(2)+'h';
+
+  document.getElementById('eyebrow').textContent = `GLT — where sunset is always ${fmtTargetLabel(state.targetMinutes)}`;
+
+  const gltMinutesNow = gltDate.getUTCHours()*60 + gltDate.getUTCMinutes() + gltDate.getUTCSeconds()/60;
+  updateSky(gltMinutesNow, state.targetMinutes);
+
+  updateLocLine();
+}
+
+/* ---------- Controls ---------- */
+const gearBtn = document.getElementById('gearBtn');
+const panel = document.getElementById('panel');
+gearBtn.addEventListener('click', ()=> panel.classList.toggle('open'));
+document.addEventListener('click', (e)=>{
+  if(panel.classList.contains('open') && !panel.contains(e.target) && e.target!==gearBtn){
+    panel.classList.remove('open');
+  }
+});
+
+document.getElementById('lat').addEventListener('change', e=>{
+  state.lat=parseFloat(e.target.value); state.offsetCachedForDay=null; state.locSource='manual';
+});
+document.getElementById('lon').addEventListener('change', e=>{
+  state.lon=parseFloat(e.target.value); state.offsetCachedForDay=null; state.locSource='manual';
+});
+document.getElementById('target').addEventListener('change', e=>{
+  const [h,m] = e.target.value.split(':').map(Number);
+  state.targetMinutes = h*60+m;
+  state.offsetCachedForDay = null;
+});
+document.getElementById('clockFormat').addEventListener('change', e=>{
+  state.use12h = e.target.value === '12';
+});
+document.getElementById('useLocation').addEventListener('click', ()=> requestLocation(true));
+
+function requestLocation(userInitiated){
+  const status = document.getElementById('status');
+  if(!navigator.geolocation){ status.textContent='Geolocation not available — using manual values.'; return; }
+  if(userInitiated) status.textContent='Locating…';
+  navigator.geolocation.getCurrentPosition(pos=>{
+    state.lat = pos.coords.latitude;
+    state.lon = pos.coords.longitude;
+    state.locSource = 'gps';
+    document.getElementById('lat').value = state.lat.toFixed(2);
+    document.getElementById('lon').value = state.lon.toFixed(2);
+    state.offsetCachedForDay = null;
+    status.textContent = `Using GPS: ${state.lat.toFixed(2)}, ${state.lon.toFixed(2)}`;
+  }, err=>{
+    status.textContent = 'Location unavailable — using manual values below.';
+  }, { timeout: 8000 });
+}
+
+requestLocation(false);
+setInterval(tick, 1000);
+tick();
+</script>
+</body>
+</html>
