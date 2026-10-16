@@ -121,6 +121,12 @@
   #panel button:hover{ background: var(--glow); }
   #status{ margin-top:0.5rem; font-size:0.68rem; color:var(--slate); line-height:1.4; }
 
+  #mapLink{
+    display:none; margin-top:0.2rem;
+    font-family: ui-monospace, monospace; font-size:0.72rem; letter-spacing:0.03em;
+    color: var(--glow); text-decoration:none; border-bottom:1px solid rgba(244,184,96,0.4);
+  }
+  #mapLink:hover{ color: var(--paper); border-color: var(--paper); }
   footer{
     position:absolute; bottom:0.9rem; left:0; right:0; text-align:center; z-index:1;
     font-family: ui-monospace, monospace; font-size:0.65rem; color: var(--slate); letter-spacing:0.04em;
@@ -156,6 +162,7 @@
     <div id="gltClock"><span id="gltTime">--:--:--</span><span class="meridiem" id="gltMeridiem"></span></div>
     <div id="gltLabel">Greg Local Time · right now</div>
     <div id="locLine">📍 <span id="locCoords">--</span> <span class="tag" id="locTag"></span></div>
+    <a id="mapLink" href="/map.html">see where GLT is being used →</a>
     <div id="row">
       <div class="sub"><div class="time" id="utcClock">--:--:--</div><div class="label">GMT / UTC</div></div>
       <div class="sub"><div class="time" id="tzClock">--:--:--</div><div class="label" id="tzLabelText">Local</div></div>
@@ -422,6 +429,7 @@ function requestLocation(userInitiated){
     state.lon = pos.coords.longitude;
     state.locSource = 'gps';
     state.locName = null;
+    document.getElementById('mapLink').style.display = 'inline-block';
     document.getElementById('lat').value = state.lat.toFixed(2);
     document.getElementById('lon').value = state.lon.toFixed(2);
     state.offsetCachedForDay = null;
