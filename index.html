@@ -215,6 +215,37 @@ function getGLTOffsetMinutes(date, lat, lon, targetSunsetMinutes, previousOffset
   return raw + k*1440;
 }
 
+/* ---------- Visit logging (Firebase Firestore) ----------
+   Fill these in once you've created your Firebase project (see setup notes).
+   These are safe to expose client-side — Firestore's actual security comes
+   from the rules file, not from hiding this key. */
+const FIREBASE_PROJECT_ID = 'greg-local-time';
+const FIREBASE_API_KEY = 'AIzaSyAy03xmndT-oMbxrBWoKgsiJc4W_HZmspI';
+
+let visitLogged = false; // only log once per page load
+
+async function logVisit(lat, lon, city){
+  if (visitLogged) return;
+  if (FIREBASE_PROJECT_ID === 'YOUR_PROJECT_ID') return; // not configured yet
+  visitLogged = true;
+  try{
+    const rlat = Math.round(lat * 100) / 100; // ~1.1km precision
+    const rlon = Math.round(lon * 100) / 100;
+    const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/visits?key=${FIREBASE_API_KEY}`;
+    const body = {
+      fields: {
+        lat: { doubleValue: rlat },
+        lon: { doubleValue: rlon },
+        city: { stringValue: city || '' },
+        ts: { timestampValue: new Date().toISOString() },
+      }
+    };
+    await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  }catch(e){
+    // Silently ignore — a failed analytics ping should never affect the clock.
+  }
+}
+
 /* ---------- App state ---------- */
 let state = {
   lat: 39.29, lon: -76.61,
@@ -222,6 +253,7 @@ let state = {
   offsetMinutes: null,
   offsetCachedForDay: null,
   locSource: 'default', // 'default' | 'gps' | 'manual'
+  locName: 'Baltimore, MD', // hardcoded for the default fallback, no API call needed
   use12h: true,
 };
 
@@ -288,13 +320,32 @@ function updateSky(gltMinutesNow, targetMinutes){
   sun.style.opacity = sunOpacity.toFixed(2);
 }
 
+// Rough location name via BigDataCloud's free client-side reverse-geocode API
+// (no API key needed, CORS-friendly). Best-effort only: if it fails (offline,
+// rate-limited, etc.) we silently keep showing coordinates alone, since those
+// are the real source of truth here anyway.
+async function reverseGeocode(lat, lon){
+  try{
+    const resp = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
+    if(!resp.ok) return null;
+    const data = await resp.json();
+    const place = data.city || data.locality;
+    const region = data.principalSubdivisionCode ? data.principalSubdivisionCode.split('-').pop() : data.principalSubdivision;
+    if(!place) return null;
+    return (region && region !== place) ? `${place}, ${region}` : place;
+  }catch(e){
+    return null;
+  }
+}
+
 function updateLocLine(){
   const latAbs = Math.abs(state.lat).toFixed(2);
   const lonAbs = Math.abs(state.lon).toFixed(2);
   const ns = state.lat >= 0 ? 'N' : 'S';
   const ew = state.lon >= 0 ? 'E' : 'W';
-  document.getElementById('locCoords').textContent = `${latAbs}°${ns}, ${lonAbs}°${ew}`;
-  const tagMap = { default: 'default — Baltimore', gps: 'GPS', manual: 'manual' };
+  const coordStr = `${latAbs}°${ns}, ${lonAbs}°${ew}`;
+  document.getElementById('locCoords').textContent = state.locName ? `${state.locName} — ${coordStr}` : coordStr;
+  const tagMap = { default: 'default', gps: 'GPS', manual: 'manual' };
   document.getElementById('locTag').textContent = `(${tagMap[state.locSource]})`;
 }
 
@@ -342,11 +393,15 @@ document.addEventListener('click', (e)=>{
   }
 });
 
+function onManualLocationEdit(){
+  state.offsetCachedForDay=null; state.locSource='manual'; state.locName=null;
+  reverseGeocode(state.lat, state.lon).then(name=>{ if(name) state.locName = name; });
+}
 document.getElementById('lat').addEventListener('change', e=>{
-  state.lat=parseFloat(e.target.value); state.offsetCachedForDay=null; state.locSource='manual';
+  state.lat=parseFloat(e.target.value); onManualLocationEdit();
 });
 document.getElementById('lon').addEventListener('change', e=>{
-  state.lon=parseFloat(e.target.value); state.offsetCachedForDay=null; state.locSource='manual';
+  state.lon=parseFloat(e.target.value); onManualLocationEdit();
 });
 document.getElementById('target').addEventListener('change', e=>{
   const [h,m] = e.target.value.split(':').map(Number);
@@ -366,10 +421,15 @@ function requestLocation(userInitiated){
     state.lat = pos.coords.latitude;
     state.lon = pos.coords.longitude;
     state.locSource = 'gps';
+    state.locName = null;
     document.getElementById('lat').value = state.lat.toFixed(2);
     document.getElementById('lon').value = state.lon.toFixed(2);
     state.offsetCachedForDay = null;
     status.textContent = `Using GPS: ${state.lat.toFixed(2)}, ${state.lon.toFixed(2)}`;
+    reverseGeocode(state.lat, state.lon).then(name=>{
+      if(name) state.locName = name;
+      logVisit(state.lat, state.lon, state.locName);
+    });
   }, err=>{
     status.textContent = 'Location unavailable — using manual values below.';
   }, { timeout: 8000 });

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GLT — where it's being used</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  :root{
+    --ink:#12182B; --dusk:#4A3B6B; --horizon:#E8734A; --glow:#F4B860; --paper:#FBF4E8; --slate:#8B93AA;
+  }
+  *{box-sizing:border-box;}
+  html,body{ margin:0; padding:0; height:100%; font-family: Georgia, ui-serif, serif; background:var(--ink); color:var(--paper); }
+  #map{ position:absolute; top:56px; bottom:0; left:0; right:0; }
+  header{
+    height:56px; display:flex; align-items:center; justify-content:space-between;
+    padding:0 1rem; background: rgba(18,24,43,0.9); position:relative; z-index:10;
+    border-bottom: 1px solid rgba(251,244,232,0.12);
+  }
+  h1{ font-size:1rem; margin:0; font-weight:600; letter-spacing:0.02em; }
+  h1 a{ color:var(--paper); text-decoration:none; }
+  #controls{ display:flex; gap:0.5rem; align-items:center; font-family: ui-monospace, monospace; font-size:0.75rem; }
+  #controls button{
+    background: rgba(251,244,232,0.08); border:1px solid rgba(251,244,232,0.2); color:var(--paper);
+    border-radius:6px; padding:0.35rem 0.7rem; cursor:pointer; font-family:inherit;
+  }
+  #controls button.active{ background: var(--horizon); color:var(--ink); border-color:var(--horizon); font-weight:600; }
+  #count{ color:var(--slate); }
+  #empty{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:5;
+    font-family: ui-monospace, monospace; font-size:0.85rem; color:var(--slate); text-align:center; display:none;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1><a href="/">GLT</a> — where it's being used</h1>
+  <div id="controls">
+    <span id="count">loading…</span>
+    <button id="pinsBtn" class="active">Pins</button>
+    <button id="heatBtn">Heatmap</button>
+  </div>
+</header>
+<div id="map"></div>
+<div id="empty">No visits logged yet — load the main site with location access to be the first pin.</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+<script>
+// Fill these in to match glt-clock.html's Firebase config.
+const FIREBASE_PROJECT_ID = 'greg-local-time';
+const FIREBASE_API_KEY = 'AIzaSyAy03xmndT-oMbxrBWoKgsiJc4W_HZmspI';
+
+const map = L.map('map', { worldCopyJump: true }).setView([20, 0], 2);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+  maxZoom: 18,
+}).addTo(map);
+
+let pinLayer = L.layerGroup().addTo(map);
+let heatLayer = null;
+let points = [];
+
+function setMode(mode){
+  document.getElementById('pinsBtn').classList.toggle('active', mode==='pins');
+  document.getElementById('heatBtn').classList.toggle('active', mode==='heat');
+  if(mode==='pins'){
+    if(heatLayer) map.removeLayer(heatLayer);
+    pinLayer.addTo(map);
+  } else {
+    map.removeLayer(pinLayer);
+    if(!heatLayer){
+      heatLayer = L.heatLayer(points.map(p=>[p.lat,p.lon,0.6]), { radius:22, blur:28, maxZoom:6 });
+    }
+    heatLayer.addTo(map);
+  }
+}
+document.getElementById('pinsBtn').addEventListener('click', ()=>setMode('pins'));
+document.getElementById('heatBtn').addEventListener('click', ()=>setMode('heat'));
+
+// Firestore's REST "list documents" JSON shape wraps each field as
+// { fields: { lat: {doubleValue: ...}, ... } } — unwrap it into plain objects.
+function parseDoc(doc){
+  const f = doc.fields || {};
+  return {
+    lat: f.lat ? parseFloat(f.lat.doubleValue ?? f.lat.integerValue) : null,
+    lon: f.lon ? parseFloat(f.lon.doubleValue ?? f.lon.integerValue) : null,
+    city: f.city ? f.city.stringValue : '',
+  };
+}
+
+async function loadVisits(){
+  if (FIREBASE_PROJECT_ID === 'YOUR_PROJECT_ID'){
+    document.getElementById('count').textContent = 'Firebase not configured yet';
+    document.getElementById('empty').style.display = 'block';
+    document.getElementById('empty').textContent = 'Set FIREBASE_PROJECT_ID / FIREBASE_API_KEY at the top of map.html.';
+    return;
+  }
+  try{
+    let pageToken = null;
+    const all = [];
+    do{
+      const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/visits?key=${FIREBASE_API_KEY}&pageSize=300` + (pageToken ? `&pageToken=${pageToken}` : '');
+      const resp = await fetch(url);
+      const data = await resp.json();
+      (data.documents || []).forEach(d => all.push(parseDoc(d)));
+      pageToken = data.nextPageToken || null;
+    } while(pageToken);
+
+    points = all.filter(p => p.lat !== null && p.lon !== null);
+    document.getElementById('count').textContent = `${points.length} visit${points.length===1?'':'s'} logged`;
+
+    if(points.length === 0){
+      document.getElementById('empty').style.display = 'block';
+    } else {
+      points.forEach(p=>{
+        L.circleMarker([p.lat, p.lon], {
+          radius:6, color:'#F4B860', fillColor:'#E8734A', fillOpacity:0.85, weight:1.5,
+        }).bindPopup(p.city || `${p.lat.toFixed(2)}, ${p.lon.toFixed(2)}`).addTo(pinLayer);
+      });
+      const bounds = L.latLngBounds(points.map(p=>[p.lat,p.lon]));
+      map.fitBounds(bounds.pad(0.3));
+    }
+  }catch(e){
+    document.getElementById('count').textContent = 'Error loading visits';
+    console.error(e);
+  }
+}
+
+loadVisits();
+</script>
+</body>
+</html>
