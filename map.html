@@ -26,6 +26,7 @@
   }
   #controls button.active{ background: var(--horizon); color:var(--ink); border-color:var(--horizon); font-weight:600; }
   #count{ color:var(--slate); }
+  .leaflet-tile-pane{ filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6); }
   #empty{
     position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:5;
     font-family: ui-monospace, monospace; font-size:0.85rem; color:var(--slate); text-align:center; display:none;
@@ -52,8 +53,8 @@ const FIREBASE_PROJECT_ID = 'greg-local-time';
 const FIREBASE_API_KEY = 'AIzaSyAy03xmndT-oMbxrBWoKgsiJc4W_HZmspI';
 
 const map = L.map('map', { worldCopyJump: true }).setView([20, 0], 2);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   maxZoom: 18,
 }).addTo(map);
 
