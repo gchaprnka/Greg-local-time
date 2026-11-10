@@ -170,7 +170,7 @@
     </div>
   </div>
 
-  <footer>sunset, pinned to the clock — an experiment in hyper-local time</footer>
+  <footer>sunset, pinned to the clock — an experiment in hyper-local time · <a href="/privacy.html" style="color:inherit">privacy</a></footer>
 
 <script>
 /* ---------- Ported solar / GLT core ---------- */
@@ -236,8 +236,8 @@ async function logVisit(lat, lon, city){
   if (FIREBASE_PROJECT_ID === 'YOUR_PROJECT_ID') return; // not configured yet
   visitLogged = true;
   try{
-    const rlat = Math.round(lat * 100) / 100; // ~1.1km precision
-    const rlon = Math.round(lon * 100) / 100;
+    const rlat = Math.round(lat * 10) / 10; // 0.1 degree, roughly 11km precision
+    const rlon = Math.round(lon * 10) / 10;
     const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/visits?key=${FIREBASE_API_KEY}`;
     const body = {
       fields: {

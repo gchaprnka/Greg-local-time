@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GLT — Privacy</title>
+<style>
+  :root{ --ink:#12182B; --horizon:#E8734A; --glow:#F4B860; --paper:#FBF4E8; --slate:#8B93AA; }
+  *{box-sizing:border-box;}
+  html,body{ margin:0; padding:0; background:var(--ink); color:var(--paper);
+    font-family: Georgia, "Iowan Old Style", ui-serif, serif; line-height:1.6; }
+  main{ max-width:42rem; margin:0 auto; padding:2rem 1.25rem 4rem; }
+  a{ color:var(--glow); }
+  h1{ font-size:1.8rem; margin:0.5rem 0 1.5rem; }
+  h2{ font-size:1.1rem; margin:2rem 0 0.5rem; color:var(--glow); }
+  .back{ font-family: ui-monospace, monospace; font-size:0.8rem; color:var(--slate); text-decoration:none; }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="/">← GLT</a>
+  <h1>Privacy Policy</h1>
+
+  <p><em>Greg Local Time (GLT) · Last updated: November 6, 2026</em></p>
+
+  <h2>The short version</h2>
+  <p>GLT works out the time on your device, using your location. Your location leaves your device only if you choose to share it, and then only as a rounded, anonymous point on a public map. No accounts, no ads, no tracking.</p>
+
+  <h2>Who runs this</h2>
+  <p>GLT is made by Greg Chaprnka, an individual. Contact: <a href="mailto:greglocaltime@gmail.com">greglocaltime@gmail.com</a>.</p>
+
+  <h2>What stays on your device</h2>
+  <p>The iPhone app, Apple Watch app, widgets, and complications use your location to calculate sunset. That calculation happens on your device. Your settings and last known location are stored on your device and are not sent anywhere by the watch app, widgets, or complications.</p>
+
+  <h2>The public map (optional, off by default)</h2>
+  <p>If you opt in, the iPhone app sends one record, at most once an hour, containing:</p>
+  <ul>
+    <li>your latitude and longitude rounded to 0.1° (about 7 miles / 11 km), and</li>
+    <li>the date and time.</li>
+  </ul>
+  <p>We don't send your name, email, device ID, or advertising ID. Records aren't linked to you. Manually entered coordinates are never sent. You can turn this off at any time in the app's Settings.</p>
+  <p>Records are stored in Google Firebase and shown on a public map at <a href="/map.html">greglocaltime.com/map.html</a>. <strong>Anyone can see them.</strong> Because records are anonymous, individual ones can't be identified or deleted on request.</p>
+
+  <h2>The website</h2>
+  <p>If you allow your browser to share your location, the site sends your coordinates to BigDataCloud to look up a place name, and adds a point to the public map (coordinates rounded to 0.1°, place name, date and time). The map page also loads code from cdnjs and map tiles from OpenStreetMap, which can see your IP address as with any website.</p>
+
+  <h2>Third parties</h2>
+  <p>Google (Firebase), BigDataCloud, OpenStreetMap, cdnjs, and Apple. Each has its own privacy policy. We don't use ad networks or third-party analytics.</p>
+
+  <h2>Children</h2>
+  <p>GLT is not directed at children, and we don't knowingly collect their personal information.</p>
+
+  <h2>Your choices</h2>
+  <p>Decline or revoke location access in your device Settings, decline or turn off map sharing in the app, or enter coordinates manually.</p>
+
+  <h2>Disclaimer</h2>
+  <p>GLT is provided "as is" and "as available," without warranties of any kind, express or implied. Sunset and time calculations are approximations and may be inaccurate, so don't rely on GLT for anything safety-critical, legal, navigational, or time-sensitive. To the fullest extent permitted by law, Greg Chaprnka is not liable for any loss, damage, or claim arising from your use of GLT or from the information shown on the public map, including any inaccuracies, unavailability, or third-party services. While reasonable care is taken, no internet service is perfectly secure, and data you choose to share is shared at your own risk. Nothing here excludes any rights you have under applicable law that cannot be excluded.</p>
+
+  <h2>Changes</h2>
+  <p>If this policy changes, the date above will be updated. If a change affects how location is used, the app will ask again before collecting anything new.</p>
+
+</main>
+</body>
+</html>
