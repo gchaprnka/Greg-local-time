@@ -1,0 +1,35 @@
+name: New place alert
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # GitHub's minimum interval; runs can be delayed a few minutes
+  workflow_dispatch: {}      # lets you run it by hand from the Actions tab
+
+permissions:
+  contents: write            # needed to save the "last seen" state file
+
+concurrency:
+  group: new-place-alert
+  cancel-in-progress: false
+
+jobs:
+  alert:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check for new places
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: node scripts/new-place-alert.mjs
+      - name: Save state
+        run: |
+          if [ -n "$(git status --porcelain .state)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add .state
+            git commit -m "Update new-place alert state [skip ci]"
+            git push
+          fi
