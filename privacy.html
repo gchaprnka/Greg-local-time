@@ -36,6 +36,7 @@
 
   <h2>Place names (Android app)</h2>
   <p>To show a place name next to your coordinates, the Android app asks Android's built-in geocoder to look up the coordinates. Android sends them to your phone's geocoding service (Google on most phones). The name is stored on your phone. This happens for GPS and manually entered locations, but not for the default location.</p>
+  <p>You can also pick a location by searching for a place by name. The app sends the words you type to the same geocoding service to find matching places. The place you pick is used like manually entered coordinates: stored on your phone and never added to the public map.</p>
 
   <h2>The public map (optional, off by default)</h2>
   <p>If you opt in, the iPhone or Android app sends one record, at most once an hour, containing:</p>
@@ -45,7 +46,7 @@
   </ul>
   <p>We don't send your name, email, device ID, or advertising ID. Records aren't linked to you. Manually entered coordinates are never sent. You can turn this off at any time in the app's Settings.</p>
   <p>Records are stored in Google Firebase and shown on a public map at <a href="/map.html">greglocaltime.com/map.html</a>. <strong>Anyone can see them.</strong> Because records are anonymous, individual ones can't be identified or deleted on request.</p>
-  <p>The iPhone app can also show this public map. It loads the points from the same database, so Google can see your device's IP address when you open it, as with any network request. Viewing the map doesn't send your location anywhere.</p>
+  <p>The iPhone and Android apps can also show this public map. They load the points from the same database, so Google can see your device's IP address when you open it, as with any network request. The Android app's map also loads map tiles from OpenStreetMap, which can likewise see your IP address. Viewing the map doesn't send your location anywhere.</p>
 
   <h2>The website</h2>
   <p>If you allow your browser to share your location, the site sends your coordinates to BigDataCloud to look up a place name, and adds a point to the public map (coordinates rounded to 0.1°, place name, date and time). The map page also loads code from cdnjs and map tiles from OpenStreetMap, which can see your IP address as with any website.</p>
