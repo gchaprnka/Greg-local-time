@@ -131,6 +131,10 @@
     position:absolute; bottom:0.9rem; left:0; right:0; text-align:center; z-index:1;
     font-family: ui-monospace, monospace; font-size:0.65rem; color: var(--slate); letter-spacing:0.04em;
   }
+  /* Apple's badge artwork, unmodified (black version, 40px tall as supplied). */
+  #storeBadges{ display:flex; justify-content:center; align-items:center; gap:0.6rem; margin-bottom:0.7rem; }
+  #storeBadges a{ display:inline-block; line-height:0; }
+  #storeBadges img{ height:40px; width:auto; display:block; }
 </style>
 </head>
 <body>
@@ -170,7 +174,12 @@
     </div>
   </div>
 
-  <footer>sunset, pinned to the clock — an experiment in hyper-local time · <a href="/privacy.html" style="color:inherit">privacy</a> · <a href="https://ko-fi.com/greglocaltime" style="color:inherit" target="_blank" rel="noopener">tip jar</a></footer>
+  <footer>
+  <div id="storeBadges">
+    <a href="https://apps.apple.com/us/app/greg-local-time/id6832857471?itscg=30200&amp;itsct=apps_box_badge&amp;mttnsubad=6832857471" target="_blank" rel="noopener"><img src="/badges/app-store-badge-black.svg" alt="Download on the App Store" width="120" height="40"></a>
+    <!-- Google Play badge goes here once the Android app is public -->
+  </div>
+  sunset, pinned to the clock — an experiment in hyper-local time · <a href="/privacy.html" style="color:inherit">privacy</a> · <a href="https://ko-fi.com/greglocaltime" style="color:inherit" target="_blank" rel="noopener">tip jar</a></footer>
 
 <script>
 /* ---------- Ported solar / GLT core ---------- */
